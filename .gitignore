@@ -9,6 +9,8 @@
 *.docc-build
 *.vs
 Package.resolved
+models
+output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

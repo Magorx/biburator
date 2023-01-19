@@ -1,3 +1,19 @@
+# Updates from KCTF:
+
+0) Prepare 10Gb of free disk space. It's not a joke.
+
+1) Follow "Using Ready-made Core ML Models from Hugging Face Hub" instructions, helper script is already in here: download.py, just run it. SD2 is downloaded by default, but you can change it in the script. Mind -i and --model-version then, call --help for more info.
+
+1.1) Most of settings from the --help won't work because they are rewritten by UI elements.
+
+2) pyhton3 main.py
+
+3) ???
+
+4) PROFIT
+
+5) Don't try to get into my code, it's somewhat a mess. I wanted to generate images - I got it.
+
 # Core ML Stable Diffusion
 
 Run Stable Diffusion on Apple Silicon with Core ML
