@@ -2,9 +2,9 @@
 
 0) Prepare 10Gb of free disk space. It's not a joke.
 
-1) Follow "Using Ready-made Core ML Models from Hugging Face Hub" instructions, helper script is already in here: download.py, just run it. SD2 is downloaded by default, but you can change it in the script. Mind -i and --model-version then, call --help for more info.
+1) Follow "Using Ready-made Core ML Models from Hugging Face Hub" instructions, helper script is already in here: download.py, just run it. SD2 is downloaded by default, but you can change it in the script. Mind -i and --model-version then, call --help for more info. Most of settings from the --help won't work because they are rewritten by UI elements.
 
-1.1) Most of settings from the --help won't work because they are rewritten by UI elements.
+2) create python venv as described below, add pyqt6 and maybe something else to it.
 
 2) pyhton3 main.py
 
