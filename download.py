@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 
 repo_id = "apple/coreml-stable-diffusion-2-base"
-variant = "original/packages"
+variant = "split_einsum/packages"
 
 def download_model(repo_id, variant, output_dir):
     destination = Path(output_dir) / (repo_id.split("/")[-1] + "_" + variant.replace("/", "_"))

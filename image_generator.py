@@ -34,6 +34,7 @@ class ImageGenerator:
         self.image = None
         self.history = {
             "prompt": None,
+            "negative_prompt": None,
             "steps": None,
             "guidence": None,
             "seed": None,
@@ -59,29 +60,58 @@ class ImageGenerator:
 
     def save_image(self):
         path = self.generate_image_path() + '.png'
+
         image = PIL.Image.fromarray(self.image)
-        print(str(path))
         image.save(path)
 
+        self.logger.info("image saved to " + str(path))
+
     def save_history(self):
-        path = self.generate_image_path() + ".gif"
-        images = [PIL.Image.fromarray(img) for img in self.history["images"]]
+        path = self.generate_image_path() + '.gif'
+    
+        images = [PIL.Image.fromarray(img) for img in self.history['images']]
         images[0].save(path, save_all=True, append_images=images[1:], duration=self.history_frame_duration)
+    
+        self.logger.info("history saved to " + str(path))
 
     def generate_image_path(self):
-        prompt = self.history["prompt"]
-        folder = os.path.join(self.args.o, "_".join(prompt.replace("/", "_").rsplit(" ")))
+        prompt = self.history['prompt']
+        negative_prompt = self.history['negative_prompt']
+
+        if prompt is None:
+            prompt = ""
+        if negative_prompt is None:
+            negative_prompt = ""
+        
+        prompt = prompt.replace('/', '_').replace(', ', ',').replace('. ', ',').replace(' ', '_')
+        negative_prompt = negative_prompt.replace('/', '_').replace(', ', ',').replace('. ', ',').replace(' ', '_')
+
+        if len(prompt) + len(negative_prompt) > 50:
+            lens_proportions = len(prompt) / (len(prompt) + len(negative_prompt))
+            prompt = prompt[:int(50 * lens_proportions)]
+            negative_prompt = negative_prompt[:int(50 * (1 - lens_proportions))]
+        
+        text = prompt + "," + negative_prompt
+        text = text.split(',')
+    
+        folder = os.path.join(self.args.o, '_'.join(text))
         os.makedirs(folder, exist_ok=True)
 
-        name = f"{self.history['seed']}_{len(self.history['images'])}_{self.history['guidence']}"
+        name = f"{self.history['seed']}_{len(self.history['images'])}_{self.history['guidence']}".replace(".", "_")
         return os.path.join(folder, name)
 
     def create_step_callback(self, external_callback):
         def callback(iter, time_left, latents):
             if latents is None:
-                image = (np.random.random((512, 512, 3)) * 255).astype(np.uint8)
+                if self.history_frame_duration < 1:
+                    image = (np.ones((512, 512, 3)) * np.random.random() * 255).astype(np.uint8)
+                else:
+                    image = (np.random.random((512, 512, 3)) * 255).astype(np.uint8)
             else:
-                image = (self.model.decode_latents(latents)[0] * 255).astype(np.uint8)
+                if self.history_frame_duration < 1:
+                    image = latents
+                else:
+                    image = (self.model.decode_latents(latents)[0] * 255).astype(np.uint8)
 
             external_callback(iter, time_left, image)
 
@@ -95,19 +125,21 @@ class ImageGenerator:
         
         return callback
 
-    def __call__(self, prompt, steps, guidence, seed, external_callback):
+    def __call__(self, prompt, negative_prompt, steps, guidence, seed, external_callback):
         if self.is_generating:
             return
         else:
             self.start_generation()
 
         self.history["prompt"] = prompt
+        self.history["negative_prompt"] = negative_prompt
         self.history["steps"] = steps
         self.history["guidence"] = guidence
         self.history["seed"] = seed
 
         self.model(
             prompt=prompt,
+            negative_prompt=negative_prompt,
             height=self.model.height,
             width=self.model.width,
             num_inference_steps=steps,
