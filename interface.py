@@ -29,8 +29,13 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         self.setWindowTitle("Biburator")
 
-        self.canvas = QPixmap(512, 512)
-        self.canvas.fill(QColor(215, 215, 215))
+        self.canvas_512 = QPixmap(512, 512)
+        self.canvas_512.fill(QColor(215, 215, 215))
+        self.canvas_64 = QPixmap(64, 64)
+        self.canvas_64.fill(QColor(215, 215, 215))
+
+        self.canvas = self.canvas_512
+
         self.image_label = QLabel("This is a label")
         self.image_label.setPixmap(self.canvas)
         self.image_label.setBaseSize(self.canvas.size())
@@ -151,6 +156,7 @@ class MainWindow(QMainWindow):
     def exit_generating_mode(self):
         self.generate_button.setText("Generate")
         self.generate_button.setEnabled(True)
+        self.callback(0, 0, self.image_generator.image)
     
     def button_clicked(self):
         if self.image_generator.is_generating:
@@ -179,24 +185,24 @@ class MainWindow(QMainWindow):
     
     def create_step_callback(self):
         def callback(iter, time_left, image):
-            self.qt_image = ndarray_to_image(image)
-
-            self.canvas_sync.emit()
             self.progress_bar.setValue(iter)
+
+            if image.shape != (512, 512, 3):
+                return
+
+            self.qt_image = ndarray_to_image(image)
+            self.canvas_sync.emit()
 
         return callback
     
     def generate_thread(self, prompt, negative_prompt, steps, guidence, seed, count):
-        try:
-            for i in range(count):
-                seed += 1024 * i
-                self.logger.info(f"Seed: {seed}")
-                self.set_max_progress(steps)
+        for i in range(count):
+            seed += 1024 * i
+            self.logger.info(f"Seed: {seed}")
+            self.set_max_progress(steps)
 
-                self.image_generator(prompt, negative_prompt, steps, guidence, seed, self.callback)
-                self.progress_bar.setValue(0)
-        except Exception as e:
-            self.logger.error(e)
+            self.image_generator(prompt, negative_prompt, steps, guidence, seed, self.callback)
+            self.progress_bar.setValue(0)
 
         self.exit_generating_mode()
 

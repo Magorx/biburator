@@ -4,6 +4,7 @@ import PIL
 
 import numpy as np
 import os
+from time import sleep
 
 
 def ndarray_to_image(image):
@@ -49,13 +50,16 @@ class ImageGenerator:
         self.is_cancelled = True
     
     def end_generation(self, to_save_image=True, to_save_history=True):
+        if self.history_frame_duration < 1 and self.latents is not None:
+            self.image = (self.model.decode_latents(self.latents)[0] * 255).astype(np.uint8)
+
         self.is_generating = False
         self.is_cancelled = False
 
         if to_save_image:
             self.save_image()
-        
-        if to_save_history:
+
+        if to_save_history and self.history_frame_duration > 0:
             self.save_history()
 
     def save_image(self):
@@ -103,15 +107,24 @@ class ImageGenerator:
     def create_step_callback(self, external_callback):
         def callback(iter, time_left, latents):
             if latents is None:
+                sleep(0.1)
                 if self.history_frame_duration < 1:
-                    image = (np.ones((512, 512, 3)) * np.random.random() * 255).astype(np.uint8)
+                    image = (np.random.random((4, 64, 64)) * 255).astype(np.uint8)
+                    image = image[:3, :, :]
+                    image = image.transpose(1, 2, 0)
                 else:
                     image = (np.random.random((512, 512, 3)) * 255).astype(np.uint8)
             else:
                 if self.history_frame_duration < 1:
-                    image = latents
+                    image = latents[0].astype(np.uint8)
+                    image = image[:3, :, :]
+                    image = image.transpose(1, 2, 0)
                 else:
-                    image = (self.model.decode_latents(latents)[0] * 255).astype(np.uint8)
+                    image = (self.model.decode_latents(latents)[0] * 255).astype(np.uint8)                
+
+            self.latents = latents
+            self.iter = iter
+            self.time_left = time_left
 
             external_callback(iter, time_left, image)
 
